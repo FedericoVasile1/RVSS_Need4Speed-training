@@ -6,6 +6,7 @@ import cv2
 import torch
 from glob import glob
 from os import path
+from PIL import Image
 
 from metadata import CLASSES_LIST
 
@@ -49,6 +50,7 @@ class SteerDataSet(Dataset):
 
         idx_steering = CLASSES_LIST.index(steering)
 
+        img = Image.fromarray(img)
         img = self.transform[self.phase](img)   
         
         sample = {"image":img , "steering":idx_steering}        

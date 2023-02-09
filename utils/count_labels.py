@@ -5,7 +5,7 @@ import sys
 sys.path.append(os.getcwd())
 from training.steerDS import SteerDataSet
 from torchvision import transforms
-from metadatas import CLASSES_LIST
+from metadata import CLASSES_LIST
 
 
 transform = {}
