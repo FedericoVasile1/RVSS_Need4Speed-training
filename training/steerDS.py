@@ -7,7 +7,7 @@ import torch
 from glob import glob
 from os import path
 
-from metadatas import CLASSES_LIST
+from metadata import CLASSES_LIST
 
 
 class SteerDataSet(Dataset):

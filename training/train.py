@@ -15,6 +15,21 @@ from torch.utils.tensorboard import SummaryWriter
 sys.path.append(os.getcwd())
 from training.net import load_model
 from training.steerDS import SteerDataSet
+from metadata import CLASSES_LIST
+
+
+def make_weights_for_balanced_classes(labels, nclasses):                        
+    count = [0] * nclasses                                                      
+    for item in labels:                                                         
+        count[item] += 1                                                     
+    weight_per_class = [0.] * nclasses                                      
+    N = float(sum(count))                                                   
+    for i in range(nclasses):                                                   
+        weight_per_class[i] = N/float(count[i])                                 
+    weight = [0] * len(labels)                                              
+    for idx, val in enumerate(labels):                                          
+        weight[idx] = weight_per_class[val]                                  
+    return weight 
 
 
 def main(args):
@@ -23,6 +38,9 @@ def main(args):
         MEAN = [0.5, 0.5, 0.5]
         STD = [0.5, 0.5, 0.5]
         transform["train"] = transforms.Compose([
+            transforms.RandomApply(
+                transforms.Grayscale()
+            )
             transforms.ToTensor(),
             transforms.Normalize(
                 MEAN, STD
@@ -63,7 +81,23 @@ def main(args):
         ds, [args.train_split, args.val_split], 
         generator=torch.Generator().manual_seed(args.seed)
     )
-    trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
+
+    if args.weighted_sampler:
+        trainset.dataset.phase = "train"
+        temp = DataLoader(trainset, batch_size=args.batch_size, shuffle=False)
+        labels = []
+        for data in temp:
+            steering = data["steering"]
+            labels += steering.tolist()
+    
+        weights = make_weights_for_balanced_classes(labels, len(CLASSES_LIST))
+        sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))                     
+
+        trainloader = DataLoader(trainset, batch_size=args.batch_size, 
+                                 shuffle=False, sampler=sampler)
+    else:
+        trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
+
     valloader = DataLoader(valset, batch_size=args.batch_size, shuffle=False)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -92,10 +126,10 @@ def main(args):
 
     # Train NN
     best_val_acc = 0
+    epoch_best_model = None
     for epoch in range(1, args.num_epochs+1, 1):  # loop over the dataset multiple times
         start_time = time.time()
 
-        epoch_best_model = None
         loss_epoch = {p: 0 for p in phases}
         accuracy_epoch = {p: [] for p in phases}
         for p in phases:
@@ -191,6 +225,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.0001)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--crop_ratio", type=float, default=0.35)
+    parser.add_argument("--weighted_sampler", action="store_true")
     args = parser.parse_args()
 
     assert args.train_split > 0 and args.train_split < 1

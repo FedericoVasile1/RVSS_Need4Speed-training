@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 
-from metadatas import CLASSES_LIST
+from metadata import CLASSES_LIST
 
 
 class Net(nn.Module):
