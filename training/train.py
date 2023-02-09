@@ -37,15 +37,35 @@ def main(args):
     if args.model_name == "Net":
         MEAN = [0.5, 0.5, 0.5]
         STD = [0.5, 0.5, 0.5]
-        transform["train"] = transforms.Compose([
-            transforms.RandomApply(
-                transforms.Grayscale()
-            )
-            transforms.ToTensor(),
-            transforms.Normalize(
-                MEAN, STD
-            )
-        ])
+        if args.use_data_aug:
+            transform["train"] = transforms.Compose([
+                transforms.RandomApply(
+                    torch.nn.ModuleList([
+                        transforms.Grayscale(num_output_channels=3),
+                    ]),
+                    p=0.1
+                ),
+                transforms.RandomApply(
+                    torch.nn.ModuleList([
+                        transforms.ColorJitter(brightness=.5, hue=.3),
+                    ]),
+                    p=0.1
+                ),
+                transforms.RandomEqualize(p=0.1),
+
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    MEAN, STD
+                )
+            ])
+        else:
+            transform["train"] = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    MEAN, STD
+                )
+            ])
+
         transform["val"] = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(
@@ -226,6 +246,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--crop_ratio", type=float, default=0.35)
     parser.add_argument("--weighted_sampler", action="store_true")
+    parser.add_argument("--use_data_aug", action="store_true")
     args = parser.parse_args()
 
     assert args.train_split > 0 and args.train_split < 1
