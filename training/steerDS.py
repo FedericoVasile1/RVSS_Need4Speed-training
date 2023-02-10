@@ -9,6 +9,7 @@ from os import path
 from PIL import Image
 
 from metadata import CLASSES_LIST
+from utils.miscellaneous import hcrop
 
 
 class SteerDataSet(Dataset):
@@ -35,8 +36,7 @@ class SteerDataSet(Dataset):
         img = cv2.imread(f)
         
         if self.crop_ratio > 0:
-            idx_crop = int(img.shape[0] * self.crop_ratio)
-            img = img[idx_crop:, :, :]
+            img = hcrop(img, self.crop_ratio)
 
         steering = f.split("/")[-1].split(self.img_ext)[0][6:]
         steering = np.float32(steering)        

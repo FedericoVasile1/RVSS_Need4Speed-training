@@ -7,15 +7,19 @@ from metadata import CLASSES_LIST
 
 
 class Net(nn.Module):
-    def __init__(self, feat_vect_dim, use_avg_pool):
+    def __init__(self, feat_vect_dim, no_global_avg_pool):
         super().__init__()
         num_classes = len(CLASSES_LIST)
 
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.avgpool = nn.AdaptiveAvgPool2d((4, 4)) if use_avg_pool else nn.Identity()
-        self.fc1 = nn.Linear(256 if use_avg_pool else feat_vect_dim, 120)
+        if no_global_avg_pool:
+            self.avgpool = nn.Identity()
+        else:
+            self.avgpool = nn.AdaptiveAvgPool2d((4, 4))
+            feat_vect_dim = 16 * 4 * 4
+        self.fc1 = nn.Linear(feat_vect_dim, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, num_classes)
 
@@ -29,9 +33,9 @@ class Net(nn.Module):
         x = self.fc3(x)
         return x
 
-def load_model(model_name, feat_vect_dim=None, use_avg_pool=None):
+def load_model(model_name, feat_vect_dim=None, no_global_avg_pool=None):
     if model_name == "Net":
-        return Net(feat_vect_dim, use_avg_pool) 
+        return Net(feat_vect_dim, no_global_avg_pool) 
 
     elif model_name == "mobilenet_v2":
         model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V2)
