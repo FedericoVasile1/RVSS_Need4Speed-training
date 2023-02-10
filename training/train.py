@@ -122,7 +122,7 @@ def main(args):
 
                     # forward + backward + optimize
                     outputs = net(inputs).squeeze()
-                    if not len(outputs.shape):
+                    if b_size == 1:
                         outputs = outputs.unsqueeze(dim=0)
                     loss = criterion(outputs, labels)
 
