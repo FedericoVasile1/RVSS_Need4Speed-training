@@ -46,6 +46,10 @@ def main(args):
         generator=torch.Generator().manual_seed(args.seed)
     )
 
+    if args.balance_dataset:
+        val_list = [ds.filenames[i] for i in valset.indices]
+    
+
     if args.weighted_sampler:
         trainset.dataset.phase = "train"
         temp = DataLoader(trainset, batch_size=args.batch_size, shuffle=False)
@@ -101,6 +105,20 @@ def main(args):
     epoch_best_model = None
     for epoch in range(1, args.num_epochs+1, 1):  # loop over the dataset multiple times
         start_time = time.time()
+        
+        if args.balance_dataset:
+            ds_train = SteerDataSet(os.path.join(os.getcwd(), "data_train"),
+                                    args.crop_ratio,
+                                    transform,
+                                    ".jpg",
+                                    subsample = True,
+                                    val_list = val_list
+                                    )
+            # Add fake split to have object of the correct class
+            trainset, _ = random_split(ds_train, [1.0, 0.0],
+                                       generator=torch.Generator().manual_seed(args.seed))
+            trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
+            dataloader["train"] = trainloader
 
         loss_epoch = {p: 0 for p in phases}
         accuracy_epoch = {p: [] for p in phases}

@@ -98,6 +98,7 @@ def define_args():
     parser.add_argument("--weighted_sampler", action="store_true")
     parser.add_argument("--use_data_aug", action="store_true")
     parser.add_argument("--checkpoint", type=str, default="")
+    parser.add_argument("--balance_dataset", action="store_true")
     args = parser.parse_args()
 
     assert args.train_split > 0 and args.train_split < 1

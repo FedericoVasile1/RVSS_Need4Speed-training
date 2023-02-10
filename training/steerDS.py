@@ -10,11 +10,11 @@ from PIL import Image
 
 from metadata import CLASSES_LIST
 from utils.miscellaneous import hcrop
-
+import random
 
 class SteerDataSet(Dataset):
     
-    def __init__(self,root_folder, crop_ratio, transform, img_ext = ".jpg"):
+    def __init__(self,root_folder, crop_ratio, transform, img_ext = ".jpg", subsample=False, val_list=None):
         self.root_folder = root_folder
         self.crop_ratio = crop_ratio
         assert type(transform) is dict
@@ -25,6 +25,31 @@ class SteerDataSet(Dataset):
         )
         # set this in the training loop, at each epoch for each phase
         self.phase = None
+        if subsample:
+            assert val_list is not None
+            self.filenames = [filename for filename in self.filenames if filename not in val_list]
+            random.shuffle(self.filenames)
+            filenames_dict = {}
+            classes_cnt = {i:0 for i in range(len(CLASSES_LIST))}
+            # Count classes occurrences
+            for filename in self.filenames:
+                steering = np.float32(filename.split("/")[-1].split(self.img_ext)[0][6:])
+                steering = round(steering.item(), 1)
+                idx_steering = CLASSES_LIST.index(steering)
+                classes_cnt[idx_steering] += 1
+            # Filter filenames
+            max_img_per_class = min(classes_cnt.values())
+            classes_cnt_included = {i:0 for i in range(len(CLASSES_LIST))}
+            filenames_filtered = []
+            for filename in self.filenames:
+                steering = np.float32(filename.split("/")[-1].split(self.img_ext)[0][6:])
+                steering = round(steering.item(), 1)
+                idx_steering = CLASSES_LIST.index(steering)
+                if classes_cnt_included[idx_steering] < max_img_per_class:
+                    classes_cnt_included[idx_steering] += 1
+                    filenames_filtered.append(filename)
+            self.filenames = filenames_filtered
+
         
     def __len__(self):        
         return len(self.filenames)
