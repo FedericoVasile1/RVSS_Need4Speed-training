@@ -90,6 +90,8 @@ def main(args):
         optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-04)
     else:
         raise NotImplementedError
+        
+    lr_sched = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
 
     phases = ["train", "val"]
 
@@ -188,6 +190,8 @@ def main(args):
                 },
                 os.path.join(writer.log_dir, "best_model.pth")
             )
+        
+        lr_sched.step(loss_epoch['val'])
 
     # TODO put augmentation e.g. brightness, blur etc
     # TODO decrease learning rate if val loss does not decrease
